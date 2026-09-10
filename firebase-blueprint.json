@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "TestData": {
+      "title": "TestData",
+      "description": "A shared test containing questions and metadata.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "text": { "type": "string" },
+              "options": { "type": "array", "items": { "type": "string" } },
+              "correctAnswer": { "type": "integer" },
+              "explanation": { "type": "string" },
+              "topic": { "type": "string" },
+              "context": { "type": "string" }
+            }
+          }
+        },
+        "authorUid": { "type": "string" },
+        "isPublic": { "type": "boolean" }
+      },
+      "required": ["id", "title", "questions", "date", "authorUid"]
+    },
+    "TestResult": {
+      "title": "TestResult",
+      "description": "A student's result for a specific test.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "testId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "score": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "answers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "questionId": { "type": "string" },
+              "selectedOption": { "type": "integer" },
+              "isCorrect": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "required": ["id", "testId", "studentName", "score", "date", "answers"]
+    }
+  },
+  "firestore": {
+    "/shared_tests/{testId}": {
+      "schema": "TestData",
+      "description": "Collection of tests shared by teachers."
+    },
+    "/test_results/{resultId}": {
+      "schema": "TestResult",
+      "description": "Collection of results submitted by students."
+    }
+  }
+}

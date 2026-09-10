@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: shared_tests
+    // Document ID: testId
+    // Fields:
+    //   - id: string (required)
+    //   - title: string (required)
+    //   - questions: array (required)
+    //   - date: string (required)
+    //   - authorUid: string (required)
+    //   - isPublic: boolean (optional)
+    //
+    // Collection: test_results
+    // Document ID: resultId
+    // Fields:
+    //   - id: string (required)
+    //   - testId: string (required)
+    //   - studentName: string (required)
+    //   - score: number (required)
+    //   - date: string (required)
+    //   - answers: array (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "thaongan3183@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidTestData(data) {
+      return data.keys().hasAll(['id', 'title', 'questions', 'date', 'authorUid']) &&
+             data.id is string &&
+             data.title is string && data.title.size() < 500 &&
+             data.questions is list && data.questions.size() < 200 &&
+             data.date is string &&
+             data.authorUid is string;
+    }
+
+    function isValidTestResult(data) {
+      return data.keys().hasAll(['id', 'testId', 'studentName', 'score', 'date', 'answers']) &&
+             data.id is string &&
+             data.testId is string &&
+             data.studentName is string && data.studentName.size() < 100 &&
+             data.score is number &&
+             data.date is string &&
+             data.answers is list;
+    }
+
+    // Rules for shared_tests
+    match /shared_tests/{testId} {
+      // Anyone can read a shared test if they have the ID
+      allow read: if true;
+      
+      // Only authenticated users can create tests, and they must be the author
+      allow create: if isAuthenticated() && 
+                      isValidTestData(request.resource.data) && 
+                      request.resource.data.authorUid == request.auth.uid;
+      
+      // Only the author or admin can update/delete
+      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.authorUid == request.auth.uid);
+    }
+
+    // Rules for test_results
+    match /test_results/{resultId} {
+      // Students can create results
+      allow create: if isValidTestResult(request.resource.data);
+      
+      // Only the teacher (author of the test) or admin can read results
+      // This requires a get() to the test document to check authorUid
+      allow read: if isAdmin() || 
+                    (isAuthenticated() && 
+                     get(/databases/$(database)/documents/shared_tests/$(resource.data.testId)).data.authorUid == request.auth.uid);
+      
+      // Results are generally immutable once submitted
+      allow update, delete: if isAdmin();
+    }
+
+    // Rules for users (for RBAC)
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Remix: AI Test Master",
+  "description": "Biến tài liệu ôn tập (PDF/DOC) thành bài kiểm tra tương tác với giải thích chi tiết và bài tập bổ trợ cá nhân hóa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
